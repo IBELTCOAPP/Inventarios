@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+.env*
+
+# datos de seed (información del cliente, no debe ir en el repo público)
+scripts/seed_*.json

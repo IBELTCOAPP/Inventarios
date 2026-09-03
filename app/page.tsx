@@ -1,69 +1,83 @@
-import Image from "next/image";
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { rollos, retales, cortes } from "@/lib/db/schema";
+import { eq, sql, gte } from "drizzle-orm";
+
+async function getResumen() {
+  const [rollosActivos] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(rollos)
+    .where(eq(rollos.estado, "INICIADO"));
+  const [retalesDisponibles] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(retales)
+    .where(eq(retales.disponible, true));
+  const [cortesTotal] = await db.select({ n: sql<number>`count(*)` }).from(cortes);
+  const hace30dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [cortesRecientes] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(cortes)
+    .where(gte(cortes.fecha, hace30dias));
+
+  return {
+    rollosActivos: rollosActivos?.n ?? 0,
+    retalesDisponibles: retalesDisponibles?.n ?? 0,
+    cortesTotal: cortesTotal?.n ?? 0,
+    cortesRecientes: cortesRecientes?.n ?? 0,
+  };
+}
+
+function Card({ label, value, href }: { label: string; value: number | string; href: string }) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <Link
+      href={href}
+      className="block rounded-lg border border-neutral-200 bg-white p-5 transition hover:border-neutral-400"
+    >
+      <div className="text-3xl font-semibold">{value}</div>
+      <div className="mt-1 text-sm text-neutral-500">{label}</div>
+    </Link>
+  );
+}
+
+export default async function Home() {
+  const resumen = await getResumen();
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Inventario de Rollos — IBELTCO</h1>
+        <p className="mt-1 text-neutral-600">
+          Reemplaza el Excel de planos de rollos, histórico de cortes y análisis de anchos.
+          Registra un pedido y el aplicativo indica exactamente de dónde cortar.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card label="Rollos activos" value={resumen.rollosActivos} href="/rollos" />
+        <Card label="Retales disponibles" value={resumen.retalesDisponibles} href="/retales" />
+        <Card label="Cortes últimos 30 días" value={resumen.cortesRecientes} href="/historial" />
+        <Card label="Cortes históricos" value={resumen.cortesTotal} href="/historial" />
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 bg-white p-5">
+        <h2 className="font-medium">¿Qué hacer primero?</h2>
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-neutral-700">
+          <li>
+            Revisa el <Link className="underline" href="/rollos">inventario de rollos</Link> cargado
+            desde Planos Rollos.xlsx.
+          </li>
+          <li>
+            Registra un <Link className="underline" href="/pedidos/nuevo">nuevo pedido</Link> y deja
+            que el motor de corte te diga de qué rollo o retal cortarlo, y en qué coordenadas.
+          </li>
+          <li>
+            Consulta el <Link className="underline" href="/historial">historial</Link> para ver la
+            trazabilidad de cada corte.
+          </li>
+        </ol>
+      </div>
     </div>
   );
 }
