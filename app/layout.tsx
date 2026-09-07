@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 
@@ -36,8 +37,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-neutral-50 text-neutral-900">
         <header className="border-b border-neutral-200 bg-white">
           <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-            <Link href="/" className="font-semibold tracking-tight">
-              IBELTCO <span className="font-normal text-neutral-500">· Inventario</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/logo-ibeltco.jpg"
+                alt="IBELTCO"
+                width={281}
+                height={105}
+                className="h-8 w-auto"
+                priority
+              />
             </Link>
             <nav className="flex gap-4 text-sm text-neutral-600">
               {NAV.map((item) => (
