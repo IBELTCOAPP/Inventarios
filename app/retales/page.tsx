@@ -1,52 +1,23 @@
 export const dynamic = "force-dynamic";
 
-import { getRetalesDisponibles } from "@/lib/db/queries";
+import { getRetalesTodos, getLineasMaestroActivas } from "@/lib/db/queries";
+import { RetalForm } from "@/components/retal-form";
 
 export default async function RetalesPage() {
-  const data = await getRetalesDisponibles();
+  const [data, lineasData] = await Promise.all([getRetalesTodos(), getLineasMaestroActivas()]);
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Retales disponibles</h1>
+        <h1 className="text-xl font-semibold">Módulo de retales</h1>
         <p className="text-sm text-neutral-600">
-          Sobrantes de cortes previos, listos para reutilizar antes de abrir un rollo nuevo. Este
-          inventario no existía en el ERP — hoy vive solo aquí.
+          Cada pieza sobrante se controla <strong>individualmente</strong> (ancho x largo), ya sea
+          generada automáticamente al confirmar un corte, o registrada manualmente aquí. Esto es lo
+          que el ERP no tenía — antes solo sumaba un total sin saber en cuántos pedazos estaba
+          repartido.
         </p>
       </div>
-
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full min-w-[600px] text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-500">
-            <tr>
-              <th className="px-4 py-2 font-medium">Lote origen</th>
-              <th className="px-4 py-2 font-medium">Línea</th>
-              <th className="px-4 py-2 font-medium">Referencia</th>
-              <th className="px-4 py-2 font-medium">Ancho (mm)</th>
-              <th className="px-4 py-2 font-medium">Largo (mm)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {data.map((r) => (
-              <tr key={r.id}>
-                <td className="px-4 py-2 font-medium">{r.loteOrigen}</td>
-                <td className="px-4 py-2">{r.linea}</td>
-                <td className="px-4 py-2">{r.referencia}</td>
-                <td className="px-4 py-2">{r.anchoMm.toLocaleString("es-CO")}</td>
-                <td className="px-4 py-2">{r.largoMm.toLocaleString("es-CO")}</td>
-              </tr>
-            ))}
-            {data.length === 0 && (
-              <tr>
-                <td className="px-4 py-6 text-center text-neutral-400" colSpan={5}>
-                  No hay retales registrados todavía. Se generan al marcar un corte como
-                  &quot;retal útil&quot; desde un pedido.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <RetalForm retales={data} lineas={lineasData.map((l) => l.nombre)} />
     </div>
   );
 }

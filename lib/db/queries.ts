@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { rollos, retales, cortes, anchosAnalisis } from "./schema";
+import { rollos, retales, cortes, anchosAnalisis, operarios, lineas, clientes, proveedores } from "./schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export async function getRollos() {
@@ -13,6 +13,10 @@ export async function getRolloPorLote(lote: string) {
 
 export async function getCortesPorLote(lote: string) {
   return db.select().from(cortes).where(eq(cortes.lote, lote)).orderBy(cortes.yInicial);
+}
+
+export async function getRetalesTodos() {
+  return db.select().from(retales).orderBy(retales.linea, retales.referencia);
 }
 
 export async function getRetalesDisponibles() {
@@ -71,4 +75,40 @@ export async function getRetalesPorReferencia(linea: string, referencia: string)
         eq(retales.disponible, true)
       )
     );
+}
+
+// ------------------------------------------------------------------
+// MAESTROS — Operarios, Líneas, Clientes, Proveedores
+// ------------------------------------------------------------------
+
+export async function getOperarios() {
+  return db.select().from(operarios).orderBy(operarios.nombre);
+}
+
+export async function getOperariosActivos() {
+  return db.select().from(operarios).where(eq(operarios.estado, "Activo")).orderBy(operarios.nombre);
+}
+
+export async function getLineasMaestro() {
+  return db.select().from(lineas).orderBy(lineas.nombre);
+}
+
+export async function getLineasMaestroActivas() {
+  return db.select().from(lineas).where(eq(lineas.estado, "Activo")).orderBy(lineas.nombre);
+}
+
+export async function getClientes() {
+  return db.select().from(clientes).orderBy(clientes.nombre);
+}
+
+export async function getClientesActivos() {
+  return db.select().from(clientes).where(eq(clientes.estado, "Activo")).orderBy(clientes.nombre);
+}
+
+export async function getProveedores() {
+  return db.select().from(proveedores).orderBy(proveedores.nombre);
+}
+
+export async function getProveedoresActivos() {
+  return db.select().from(proveedores).where(eq(proveedores.estado, "Activo")).orderBy(proveedores.nombre);
 }

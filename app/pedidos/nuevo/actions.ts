@@ -4,13 +4,14 @@ import { db } from "@/lib/db";
 import { rollos, retales, cortes } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getRollosActivosPorReferencia, getRetalesPorReferencia, getCortesPorLote } from "@/lib/db/queries";
-import { sugerirCorte, type SugerenciaCorte, type PiezaRequerida } from "@/lib/cutting-engine";
+import { listarCandidatos, type CandidatoCorte, type PiezaRequerida } from "@/lib/cutting-engine";
 
 export type ResultadoBusqueda =
-  | { ok: true; sugerencia: SugerenciaCorte; pieza: PiezaRequerida }
+  | { ok: true; candidatos: CandidatoCorte[]; pieza: PiezaRequerida }
   | { ok: false; error: string };
 
-export async function buscarSugerencia(input: {
+/** Busca TODAS las opciones disponibles (retales y rollos) para una pieza — no solo la mejor. */
+export async function buscarDisponibilidad(input: {
   linea: string;
   referencia: string;
   anchoMm: number;
@@ -41,59 +42,86 @@ export async function buscarSugerencia(input: {
     );
   }
 
-  const sugerencia = sugerirCorte(pieza, retalesDisponibles, rollosActivos, cortesPorRollo);
-  return { ok: true, sugerencia, pieza };
+  const candidatos = listarCandidatos(pieza, retalesDisponibles, rollosActivos, cortesPorRollo);
+  if (candidatos.length === 0) {
+    return { ok: false, error: "No hay rollo ni retal disponible con ancho/largo suficiente para esta pieza." };
+  }
+  return { ok: true, candidatos, pieza };
 }
 
+export type EstadoHistorico = "VENDIDO" | "RETAL_UTIL" | "ELIMINADO";
+
+const MIN_UTIL_MM = 50; // por debajo de esto, el sobrante se considera desperdicio, no un retal nuevo
+
+/**
+ * Confirma el corte sobre la pieza elegida por el usuario (puede no ser la
+ * `sugerida`), con ancho/largo/X/Y que el usuario puede haber editado desde
+ * lo que el motor propuso.
+ */
 export async function confirmarCorte(input: {
-  sugerencia: SugerenciaCorte;
-  pieza: PiezaRequerida;
-  cliente: string;
-  pedidoTaller: string;
+  candidato: CandidatoCorte;
+  linea: string;
+  referencia: string;
+  anchoMm: number;
+  largoMm: number;
+  xInicial: number;
+  yInicial: number;
+  clienteNombre: string;
+  clienteLetra: string;
+  numeroPedido: string;
   operario: string;
-}): Promise<{ ok: true; lote: string } | { ok: false; error: string }> {
-  const { sugerencia, pieza, cliente, pedidoTaller, operario } = input;
+  estado: EstadoHistorico;
+  nota?: string;
+}): Promise<{ ok: true; lote: string; pedidoCodigo: string } | { ok: false; error: string }> {
+  const { candidato, anchoMm, largoMm, xInicial, yInicial, operario, estado, nota } = input;
 
-  if (sugerencia.tipo === "sin_material") {
-    return { ok: false, error: "No hay material disponible para confirmar." };
+  if (!/^\d+$/.test(input.numeroPedido.trim())) {
+    return { ok: false, error: "El número de pedido debe contener únicamente dígitos." };
   }
+  if (!(anchoMm > 0) || !(largoMm > 0)) {
+    return { ok: false, error: "Ancho y largo a cortar deben ser mayores a cero." };
+  }
+  if (!operario) return { ok: false, error: "Selecciona el operario." };
 
-  if (sugerencia.tipo === "retal") {
-    const [retal] = await db.select().from(retales).where(eq(retales.id, sugerencia.retalId)).limit(1);
+  const pedidoCodigo = `${input.clienteLetra}-${input.numeroPedido.trim()}`;
+
+  if (candidato.tipo === "retal") {
+    const [retal] = await db.select().from(retales).where(eq(retales.id, candidato.retalId)).limit(1);
     if (!retal || !retal.disponible) {
       return { ok: false, error: "Ese retal ya no está disponible (puede que otro pedido lo haya usado)." };
+    }
+    if (anchoMm > retal.anchoMm || largoMm > retal.largoMm) {
+      return { ok: false, error: `El corte no cabe en el retal (disponible: ${retal.anchoMm} x ${retal.largoMm} mm).` };
     }
 
     await db.insert(cortes).values({
       lote: retal.loteOrigen,
-      pedidoTaller,
-      cliente,
-      anchoMm: pieza.anchoMm,
-      largoMm: pieza.largoMm,
-      areaMm2: pieza.anchoMm * pieza.largoMm,
-      estado: "VENDIDO",
+      pedidoTaller: pedidoCodigo,
+      cliente: input.clienteNombre,
+      anchoMm,
+      largoMm,
+      areaMm2: anchoMm * largoMm,
+      estado,
       operario,
-      xInicial: 0,
-      yInicial: 0,
+      xInicial,
+      yInicial,
       origenTipo: "retal",
       origenRetalId: retal.id,
+      nota: nota?.trim() || null,
     });
 
-    // El retal usado se consume. Si sobra un remanente aprovechable en
-    // alguna de las dos dimensiones, se parte en un retal nuevo (corte
-    // guillotina simple, prioriza el sobrante de ancho).
     await db.update(retales).set({ disponible: false }).where(eq(retales.id, retal.id));
 
-    const MIN_UTIL_MM = 50; // por debajo de esto, el sobrante se considera desperdicio
-    const sobranteAncho = retal.anchoMm - pieza.anchoMm;
-    const sobranteLargo = retal.largoMm - pieza.largoMm;
+    // Guillotina simple: hasta 2 sobrantes nuevos (lateral de ancho, y de largo).
+    const sobranteAncho = retal.anchoMm - anchoMm;
+    const sobranteLargo = retal.largoMm - largoMm;
     if (sobranteAncho >= MIN_UTIL_MM) {
       await db.insert(retales).values({
         loteOrigen: retal.loteOrigen,
         linea: retal.linea,
         referencia: retal.referencia,
         anchoMm: sobranteAncho,
-        largoMm: retal.largoMm,
+        largoMm,
         disponible: true,
       });
     }
@@ -102,37 +130,62 @@ export async function confirmarCorte(input: {
         loteOrigen: retal.loteOrigen,
         linea: retal.linea,
         referencia: retal.referencia,
-        anchoMm: pieza.anchoMm,
+        anchoMm,
         largoMm: sobranteLargo,
         disponible: true,
       });
     }
 
-    return { ok: true, lote: retal.loteOrigen };
+    return { ok: true, lote: retal.loteOrigen, pedidoCodigo };
   }
 
   // tipo === "rollo"
-  await db.insert(cortes).values({
-    lote: sugerencia.lote,
-    pedidoTaller,
-    cliente,
-    anchoMm: pieza.anchoMm,
-    largoMm: pieza.largoMm,
-    areaMm2: pieza.anchoMm * pieza.largoMm,
-    estado: "VENDIDO",
-    operario,
-    xInicial: sugerencia.xInicial,
-    yInicial: sugerencia.yInicial,
-    origenTipo: "rollo",
-  });
+  const [rollo] = await db.select().from(rollos).where(eq(rollos.id, candidato.rolloId)).limit(1);
+  if (!rollo) return { ok: false, error: "Ese rollo ya no existe." };
 
-  if (sugerencia.abreFranjaNueva) {
-    const nuevaFrontera = sugerencia.yInicial + pieza.largoMm;
-    await db
-      .update(rollos)
-      .set({ largoUsadoMm: sql`GREATEST(${rollos.largoUsadoMm}, ${nuevaFrontera})` })
-      .where(eq(rollos.id, sugerencia.rolloId));
+  const largoDisponible = rollo.largoMm - rollo.largoUsadoMm;
+  if (anchoMm > rollo.anchoMm) return { ok: false, error: "El ancho de corte no puede superar el ancho del rollo." };
+  if (yInicial + largoMm > rollo.largoMm + 1e-6) {
+    return { ok: false, error: `El rollo solo tiene ${largoDisponible} mm disponibles a lo largo desde Y=${yInicial}.` };
   }
 
-  return { ok: true, lote: sugerencia.lote };
+  await db.insert(cortes).values({
+    lote: rollo.lote,
+    pedidoTaller: pedidoCodigo,
+    cliente: input.clienteNombre,
+    anchoMm,
+    largoMm,
+    areaMm2: anchoMm * largoMm,
+    estado,
+    operario,
+    xInicial,
+    yInicial,
+    origenTipo: "rollo",
+    nota: nota?.trim() || null,
+  });
+
+  const nuevaFrontera = yInicial + largoMm;
+  await db
+    .update(rollos)
+    .set({
+      largoUsadoMm: sql`GREATEST(${rollos.largoUsadoMm}, ${nuevaFrontera})`,
+      estado: nuevaFrontera >= rollo.largoMm - 1e-6 ? "AGOTADO" : "INICIADO",
+    })
+    .where(eq(rollos.id, rollo.id));
+
+  // Si el corte no usa todo el ancho del rollo, el sobrante lateral queda
+  // como retal aprovechable (igual que con un retal usado como origen).
+  const sobranteAncho = rollo.anchoMm - anchoMm;
+  if (sobranteAncho >= MIN_UTIL_MM) {
+    await db.insert(retales).values({
+      loteOrigen: rollo.lote,
+      linea: rollo.linea,
+      referencia: rollo.referencia,
+      anchoMm: sobranteAncho,
+      largoMm,
+      disponible: true,
+    });
+  }
+
+  return { ok: true, lote: rollo.lote, pedidoCodigo };
 }

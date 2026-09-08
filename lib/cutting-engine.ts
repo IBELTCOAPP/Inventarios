@@ -169,9 +169,117 @@ export function ubicarEnRollo(
   return { xInicial: 0, yInicial: yNueva, abreFranjaNueva: true };
 }
 
+/** Una opción de corte candidata, para mostrar al usuario junto a las demás. */
+export type CandidatoCorte =
+  | {
+      tipo: "retal";
+      retalId: number;
+      loteOrigen: string;
+      linea: string;
+      referencia: string;
+      anchoDisponible: number;
+      largoDisponible: number;
+      xSugerido: 0;
+      ySugerido: 0;
+      desperdicioMm2: number;
+      sugerido: boolean;
+    }
+  | {
+      tipo: "rollo";
+      rolloId: number;
+      lote: string;
+      linea: string;
+      referencia: string;
+      anchoRollo: number;
+      largoDisponible: number;
+      xSugerido: number;
+      ySugerido: number;
+      abreFranjaNueva: boolean;
+      desperdicioMm2: number;
+      sugerido: boolean;
+    };
+
+/**
+ * Lista TODAS las opciones donde cabría la pieza (retales primero, luego
+ * rollos), cada una con su propia posición sugerida — para que el usuario
+ * elija la pieza, no solo confirme la que el motor prefiere. La primera
+ * opción de la lista es la de menor desperdicio (`sugerido: true`).
+ */
+export function listarCandidatos(
+  pieza: PiezaRequerida,
+  retalesDisponibles: RetalDisponible[],
+  rollosActivos: RolloActivo[],
+  cortesPorRollo: Map<string, { xInicial: number; yInicial: number; anchoMm: number; largoMm: number }[]>
+): CandidatoCorte[] {
+  const candidatosRetal: CandidatoCorte[] = retalesDisponibles
+    .filter(
+      (r) =>
+        r.linea === pieza.linea &&
+        r.referencia === pieza.referencia &&
+        r.anchoMm + EPS >= pieza.anchoMm &&
+        r.largoMm + EPS >= pieza.largoMm
+    )
+    .map((r) => ({
+      tipo: "retal" as const,
+      retalId: r.id,
+      loteOrigen: r.loteOrigen,
+      linea: r.linea,
+      referencia: r.referencia,
+      anchoDisponible: r.anchoMm,
+      largoDisponible: r.largoMm,
+      xSugerido: 0 as const,
+      ySugerido: 0 as const,
+      desperdicioMm2: r.anchoMm * r.largoMm - pieza.anchoMm * pieza.largoMm,
+      sugerido: false,
+    }))
+    .sort((a, b) => a.desperdicioMm2 - b.desperdicioMm2);
+
+  const candidatosRollo: CandidatoCorte[] = [];
+  const rollosAptos = rollosActivos
+    .filter(
+      (r) =>
+        r.linea === pieza.linea &&
+        r.referencia === pieza.referencia &&
+        r.anchoMm + EPS >= pieza.anchoMm
+    )
+    .sort((a, b) => a.largoMm - a.largoUsadoMm - (b.largoMm - b.largoUsadoMm));
+
+  for (const rollo of rollosAptos) {
+    const franjas = reconstruirFranjas(cortesPorRollo.get(rollo.lote) ?? []);
+    const ubicacion = ubicarEnRollo(pieza, rollo, franjas);
+    if (ubicacion) {
+      const largoDisponible = rollo.largoMm - rollo.largoUsadoMm;
+      candidatosRollo.push({
+        tipo: "rollo",
+        rolloId: rollo.id,
+        lote: rollo.lote,
+        linea: rollo.linea,
+        referencia: rollo.referencia,
+        anchoRollo: rollo.anchoMm,
+        largoDisponible,
+        xSugerido: ubicacion.xInicial,
+        ySugerido: ubicacion.yInicial,
+        abreFranjaNueva: ubicacion.abreFranjaNueva,
+        desperdicioMm2: rollo.anchoMm * largoDisponible - pieza.anchoMm * pieza.largoMm,
+        sugerido: false,
+      });
+    }
+  }
+  candidatosRollo.sort((a, b) => a.desperdicioMm2 - b.desperdicioMm2);
+
+  // Retales primero (aprovechar sobrantes antes que abrir/avanzar un rollo),
+  // y dentro de cada grupo, menor desperdicio primero.
+  const todos = [...candidatosRetal, ...candidatosRollo];
+  if (todos.length > 0) todos[0] = { ...todos[0], sugerido: true };
+  return todos;
+}
+
 /**
  * Punto de entrada: dada una pieza requerida y el inventario disponible,
  * devuelve dónde cortarla. Prioriza retales sobre rollos nuevos.
+ *
+ * @deprecated preferir `listarCandidatos` para dejar elegir al usuario;
+ * se conserva por si algún llamador solo necesita la mejor sugerencia.
  */
 export function sugerirCorte(
   pieza: PiezaRequerida,
