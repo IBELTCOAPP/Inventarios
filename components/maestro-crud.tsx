@@ -83,7 +83,7 @@ export function MaestroCrud({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 rounded-lg border border-neutral-200 bg-white p-5 sm:grid-cols-2">
+      <div className="grid gap-4 card p-5 sm:grid-cols-2">
         {campos.map((c) => (
           <label key={c.key} className="block text-sm">
             <span className="mb-1 block text-neutral-600">
@@ -118,7 +118,7 @@ export function MaestroCrud({
             type="button"
             onClick={guardar}
             disabled={isPending}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="btn-primary"
           >
             {isPending ? "Guardando..." : editId ? "Guardar cambios" : "Agregar"}
           </button>
@@ -127,7 +127,7 @@ export function MaestroCrud({
               type="button"
               onClick={cancelarEdicion}
               disabled={isPending}
-              className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700"
+              className="btn-secondary"
             >
               Cancelar
             </button>
@@ -139,7 +139,7 @@ export function MaestroCrud({
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto card">
         <table className="w-full min-w-[600px] text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-500">
             <tr>
@@ -154,7 +154,7 @@ export function MaestroCrud({
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {registros.map((r) => (
-              <tr key={r.id} className="hover:bg-neutral-50">
+              <tr key={r.id} className="hover:bg-brand-50/60">
                 {columnasTabla.map((c) => (
                   <td key={c.key} className="px-4 py-2">
                     {r[c.key] || "—"}
@@ -174,7 +174,7 @@ export function MaestroCrud({
                     <button
                       type="button"
                       onClick={() => empezarEdicion(r)}
-                      className="text-blue-700 underline"
+                      className="link-brand"
                     >
                       Editar
                     </button>

@@ -70,7 +70,7 @@ export function RetalForm({ retales, lineas }: { retales: Retal[]; lineas: strin
 
   return (
     <div className="space-y-4">
-      <details className="rounded-lg border border-neutral-200 bg-white" open={editId !== null}>
+      <details className="card" open={editId !== null}>
         <summary className="cursor-pointer select-none px-5 py-3 text-sm font-medium">
           {editId ? "Editar retal" : "➕ Registrar retal manual"}
         </summary>
@@ -106,12 +106,12 @@ export function RetalForm({ retales, lineas }: { retales: Retal[]; lineas: strin
               type="button"
               onClick={guardar}
               disabled={isPending}
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="btn-primary"
             >
               {isPending ? "Guardando..." : editId ? "Guardar cambios" : "Agregar retal"}
             </button>
             {editId && (
-              <button type="button" onClick={cancelar} disabled={isPending} className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700">
+              <button type="button" onClick={cancelar} disabled={isPending} className="btn-secondary">
                 Cancelar
               </button>
             )}
@@ -124,7 +124,7 @@ export function RetalForm({ retales, lineas }: { retales: Retal[]; lineas: strin
         </div>
       </details>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto card">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-500">
             <tr>
@@ -139,7 +139,7 @@ export function RetalForm({ retales, lineas }: { retales: Retal[]; lineas: strin
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {retales.map((r) => (
-              <tr key={r.id} className="hover:bg-neutral-50">
+              <tr key={r.id} className="hover:bg-brand-50/60">
                 <td className="px-4 py-2 font-medium">{r.loteOrigen}</td>
                 <td className="px-4 py-2">{r.linea}</td>
                 <td className="px-4 py-2">{r.referencia}</td>
@@ -152,7 +152,7 @@ export function RetalForm({ retales, lineas }: { retales: Retal[]; lineas: strin
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => empezarEdicion(r)} className="text-blue-700 underline">
+                    <button type="button" onClick={() => empezarEdicion(r)} className="link-brand">
                       Editar
                     </button>
                     <button type="button" onClick={() => eliminar(r.id)} className="text-red-700 underline">

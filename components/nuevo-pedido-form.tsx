@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { buscarDisponibilidad, confirmarCorte, type EstadoHistorico } from "@/app/pedidos/nuevo/actions";
+import { buscarDisponibilidad, confirmarCorte, type EstadoHistorico, type PlanoRollo } from "@/app/pedidos/nuevo/actions";
 import type { CandidatoCorte, PiezaRequerida } from "@/lib/cutting-engine";
+import { PlanoDeCorte } from "@/components/plano-de-corte";
 
 type LineaReferencia = { linea: string; referencia: string };
 type Cliente = { id: number; nombre: string; letra: string };
@@ -29,6 +30,7 @@ export function NuevoPedidoForm({
   const [pieza, setPieza] = useState<PiezaRequerida | null>(null);
   const [candidatos, setCandidatos] = useState<CandidatoCorte[] | null>(null);
   const [seleccion, setSeleccion] = useState<CandidatoCorte | null>(null);
+  const [planos, setPlanos] = useState<Record<string, PlanoRollo>>({});
 
   const [anchoFinal, setAnchoFinal] = useState("");
   const [largoFinal, setLargoFinal] = useState("");
@@ -49,6 +51,11 @@ export function NuevoPedidoForm({
 
   function idCandidato(c: CandidatoCorte) {
     return c.tipo === "retal" ? `retal-${c.retalId}` : `rollo-${c.rolloId}`;
+  }
+
+  /** El lote cuyo plano hay que dibujar para un candidato dado. */
+  function loteDelPlano(c: CandidatoCorte) {
+    return c.tipo === "retal" ? c.loteOrigen : c.lote;
   }
 
   function elegirCandidato(c: CandidatoCorte, piezaBase: PiezaRequerida) {
@@ -77,6 +84,9 @@ export function NuevoPedidoForm({
       }
       setPieza(res.pieza);
       setCandidatos(res.candidatos);
+      setPlanos(res.planos);
+      // Por defecto el sistema se para en el candidato sugerido (⭐), así que
+      // de una vez se ve el plano de ese rollo con los cortes que ya tiene.
       elegirCandidato(res.candidatos[0], res.pieza);
     });
   }
@@ -113,7 +123,7 @@ export function NuevoPedidoForm({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 rounded-lg border border-neutral-200 bg-white p-5 sm:grid-cols-2">
+      <div className="card grid gap-4 p-5 sm:grid-cols-2">
         <Field label="Línea">
           <select
             className="input"
@@ -157,7 +167,7 @@ export function NuevoPedidoForm({
             type="button"
             onClick={buscar}
             disabled={isPending || !linea || !referencia || !ancho || !largo}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="btn-primary w-full"
           >
             {isPending ? "Buscando..." : "🔍 Buscar disponibilidad (rollos y retales)"}
           </button>
@@ -188,83 +198,126 @@ export function NuevoPedidoForm({
           </div>
 
           {seleccion && (
-            <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-5">
-              <h3 className="font-medium text-blue-900">Coordenadas de corte (editable)</h3>
-              <div className="grid gap-4 sm:grid-cols-4">
-                <Field label="Ancho a cortar (mm)">
-                  <input className="input" type="number" value={anchoFinal} onChange={(e) => setAnchoFinal(e.target.value)} />
-                </Field>
-                <Field label="Largo a cortar (mm)">
-                  <input className="input" type="number" value={largoFinal} onChange={(e) => setLargoFinal(e.target.value)} />
-                </Field>
-                <Field label="X inicial (mm)">
-                  <input className="input" type="number" value={xFinal} onChange={(e) => setXFinal(e.target.value)} />
-                </Field>
-                <Field label="Y inicial (mm)">
-                  <input className="input" type="number" value={yFinal} onChange={(e) => setYFinal(e.target.value)} />
-                </Field>
-              </div>
+            <div className="space-y-4 rounded-xl border border-brand-200 bg-brand-50/60 p-5">
+              <h3 className="font-medium text-brand-900">
+                {seleccion.tipo === "retal" ? `Retal del lote ${seleccion.loteOrigen}` : `Rollo ${seleccion.lote}`}
+              </h3>
 
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Cliente">
-                  <select className="input" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
-                    <option value="">Selecciona...</option>
-                    {clientes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.letra} — {c.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Número de pedido (solo números)">
-                  <input
-                    className="input"
-                    inputMode="numeric"
-                    value={numeroPedido}
-                    onChange={(e) => setNumeroPedido(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Ej: 1234"
-                  />
-                </Field>
-                <Field label="Operario">
-                  <select className="input" value={operario} onChange={(e) => setOperario(e.target.value)}>
-                    <option value="">Selecciona...</option>
-                    {operarios.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-
-              {codigoPreview && (
-                <div className="text-sm text-blue-900">
-                  Código de pedido: <strong>{codigoPreview}</strong>
+              <div className="grid gap-6 lg:grid-cols-[480px_1fr]">
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-brand-700">
+                    Plano de corte — cortes que ya tiene este rollo
+                  </p>
+                  {planos[loteDelPlano(seleccion)] ? (
+                    <PlanoDeCorte
+                      anchoRollo={planos[loteDelPlano(seleccion)].anchoMm}
+                      largoRollo={planos[loteDelPlano(seleccion)].largoMm}
+                      largoUsado={planos[loteDelPlano(seleccion)].largoUsadoMm}
+                      cortes={planos[loteDelPlano(seleccion)].cortes}
+                      piezaPropuesta={
+                        seleccion.tipo === "rollo"
+                          ? {
+                              xInicial: Number(xFinal) || 0,
+                              yInicial: Number(yFinal) || 0,
+                              anchoMm: Number(anchoFinal) || 0,
+                              largoMm: Number(largoFinal) || 0,
+                            }
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <div className="card p-4 text-sm text-neutral-500">No hay plano disponible para este lote.</div>
+                  )}
+                  {seleccion.tipo === "retal" && (
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Este retal salió del rollo {seleccion.loteOrigen} — se muestra el plano completo de ese
+                      rollo como referencia. La posición exacta del retal dentro de él ya no se rastrea
+                      individualmente.
+                    </p>
+                  )}
                 </div>
-              )}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Estado resultante del corte">
-                  <select className="input" value={estado} onChange={(e) => setEstado(e.target.value as EstadoHistorico)}>
-                    <option value="VENDIDO">VENDIDO</option>
-                    <option value="RETAL_UTIL">RETAL ÚTIL</option>
-                    <option value="ELIMINADO">ELIMINADO</option>
-                  </select>
-                </Field>
-                <Field label="Nota (opcional)">
-                  <input className="input" value={nota} onChange={(e) => setNota(e.target.value)} />
-                </Field>
+                <div className="space-y-4">
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-brand-700">
+                      Coordenadas de corte (editable)
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Ancho a cortar (mm)">
+                        <input className="input" type="number" value={anchoFinal} onChange={(e) => setAnchoFinal(e.target.value)} />
+                      </Field>
+                      <Field label="Largo a cortar (mm)">
+                        <input className="input" type="number" value={largoFinal} onChange={(e) => setLargoFinal(e.target.value)} />
+                      </Field>
+                      <Field label="X inicial (mm)">
+                        <input className="input" type="number" value={xFinal} onChange={(e) => setXFinal(e.target.value)} />
+                      </Field>
+                      <Field label="Y inicial (mm)">
+                        <input className="input" type="number" value={yFinal} onChange={(e) => setYFinal(e.target.value)} />
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Cliente">
+                      <select className="input" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
+                        <option value="">Selecciona...</option>
+                        {clientes.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.letra} — {c.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Número de pedido (solo números)">
+                      <input
+                        className="input"
+                        inputMode="numeric"
+                        value={numeroPedido}
+                        onChange={(e) => setNumeroPedido(e.target.value.replace(/\D/g, ""))}
+                        placeholder="Ej: 1234"
+                      />
+                    </Field>
+                    <Field label="Operario">
+                      <select className="input" value={operario} onChange={(e) => setOperario(e.target.value)}>
+                        <option value="">Selecciona...</option>
+                        {operarios.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Estado resultante del corte">
+                      <select className="input" value={estado} onChange={(e) => setEstado(e.target.value as EstadoHistorico)}>
+                        <option value="VENDIDO">VENDIDO</option>
+                        <option value="RETAL_UTIL">RETAL ÚTIL</option>
+                        <option value="ELIMINADO">ELIMINADO</option>
+                      </select>
+                    </Field>
+                  </div>
+
+                  <Field label="Nota (opcional)">
+                    <input className="input" value={nota} onChange={(e) => setNota(e.target.value)} />
+                  </Field>
+
+                  {codigoPreview && (
+                    <div className="text-sm text-brand-900">
+                      Código de pedido: <strong>{codigoPreview}</strong>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={confirmar}
+                    disabled={isPending || !camposCompletos}
+                    className="btn-primary"
+                    title={!camposCompletos ? "Completa cliente, número de pedido y operario" : undefined}
+                  >
+                    {isPending ? "Confirmando..." : "Confirmar corte"}
+                  </button>
+                </div>
               </div>
-
-              <button
-                type="button"
-                onClick={confirmar}
-                disabled={isPending || !camposCompletos}
-                className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-                title={!camposCompletos ? "Completa cliente, número de pedido y operario" : undefined}
-              >
-                {isPending ? "Confirmando..." : "Confirmar corte"}
-              </button>
             </div>
           )}
         </div>
@@ -294,7 +347,7 @@ function CandidatoOption({
       type="button"
       onClick={onElegir}
       className={`block w-full rounded-lg border p-4 text-left transition ${
-        seleccionado ? "border-emerald-400 bg-emerald-50" : "border-neutral-200 bg-white hover:border-neutral-400"
+        seleccionado ? "border-brand-400 bg-brand-50 ring-1 ring-brand-200" : "border-neutral-200 bg-white hover:border-brand-300"
       }`}
     >
       {candidato.tipo === "retal" ? (

@@ -5,6 +5,22 @@
   --foreground: #171717;
 }
 
+/* Escala de azules derivada del isotipo de IBELTCO (#1a8fca), para que el
+   aplicativo se sienta parte de la marca en vez de una plantilla genérica. */
+@theme {
+  --color-brand-50: #edf8fd;
+  --color-brand-100: #daf0fb;
+  --color-brand-200: #b5e1f7;
+  --color-brand-300: #7ecbf1;
+  --color-brand-400: #46b4ec;
+  --color-brand-500: #1a8fca;
+  --color-brand-600: #1171a1;
+  --color-brand-700: #0d5a80;
+  --color-brand-800: #0a4563;
+  --color-brand-900: #08344a;
+  --color-brand-950: #052332;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -27,6 +43,18 @@ body {
 
 @layer components {
   .input {
-    @apply w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm outline-none focus:border-neutral-500;
+    @apply w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  }
+  .card {
+    @apply rounded-xl border border-neutral-200 bg-white shadow-sm shadow-neutral-900/[0.02];
+  }
+  .btn-primary {
+    @apply rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-40;
+  }
+  .btn-secondary {
+    @apply rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40;
+  }
+  .link-brand {
+    @apply text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-900;
   }
 }

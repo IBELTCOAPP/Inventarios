@@ -17,14 +17,14 @@ export default async function AnchosPage() {
         </p>
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-5">
+      <div className="card p-5">
         <div className="space-y-2">
           {top15.map((a) => (
             <div key={a.id} className="flex items-center gap-3 text-sm">
               <div className="w-16 shrink-0 text-right font-medium">{a.anchoMm} mm</div>
               <div className="h-4 flex-1 rounded bg-neutral-100">
                 <div
-                  className="h-4 rounded bg-blue-400"
+                  className="h-4 rounded bg-gradient-to-r from-brand-500 to-brand-400"
                   style={{ width: `${(a.unidadesVendidas / maxUnidades) * 100}%` }}
                 />
               </div>
@@ -36,7 +36,7 @@ export default async function AnchosPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto card">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-500">
             <tr>

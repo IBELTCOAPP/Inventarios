@@ -9,8 +9,15 @@ type CortePlano = {
   cliente: string | null;
 };
 
+type PiezaPropuesta = {
+  xInicial: number;
+  yInicial: number;
+  anchoMm: number;
+  largoMm: number;
+};
+
 const COLOR_POR_ESTADO: Record<string, string> = {
-  VENDIDO: "#93c5fd", // azul — pieza vendida
+  VENDIDO: "#7ecbf1", // azul marca — pieza vendida
   RETAL_UTIL: "#fde68a", // amarillo — sobrante reutilizable
   ELIMINADO: "#e5e7eb", // gris — desperdicio
 };
@@ -19,17 +26,24 @@ const COLOR_POR_ESTADO: Record<string, string> = {
  * Dibuja el rollo como un rectángulo (ancho x largo) con cada corte
  * superpuesto en su X/Y real — el mismo dibujo que Diego arma a mano en el
  * Excel "Plano de corte" / "DatosGrafico", pero generado automáticamente.
+ *
+ * `piezaPropuesta`, si se da, se dibuja encima como un rectángulo punteado
+ * en azul marca — la pieza nueva que se está a punto de cortar, para que el
+ * usuario vea de un vistazo si de verdad cabe donde el motor la ubicó (o
+ * donde la haya movido a mano).
  */
 export function PlanoDeCorte({
   anchoRollo,
   largoRollo,
   largoUsado,
   cortes,
+  piezaPropuesta,
 }: {
   anchoRollo: number;
   largoRollo: number;
   largoUsado: number;
   cortes: CortePlano[];
+  piezaPropuesta?: PiezaPropuesta;
 }) {
   // El rollo se dibuja "acostado": el ancho del rollo en el eje horizontal
   // de la pantalla y el largo en el eje vertical, igual que en el Excel.
@@ -46,7 +60,7 @@ export function PlanoDeCorte({
         width={anchoSvg}
         height={altoSvg}
         viewBox={`0 0 ${anchoSvg} ${altoSvg}`}
-        className="rounded border border-neutral-300 bg-neutral-50"
+        className="rounded-lg border border-brand-200 bg-brand-50/40"
       >
         {/* frontera de lo ya usado */}
         <rect
@@ -54,8 +68,8 @@ export function PlanoDeCorte({
           y={0}
           width={anchoRollo * escalaX}
           height={largoUsado * escalaY}
-          fill="#f8fafc"
-          stroke="#cbd5e1"
+          fill="#ffffff"
+          stroke="#bcd8e8"
           strokeDasharray="4 3"
         />
         {cortes.map((c) => (
@@ -66,7 +80,7 @@ export function PlanoDeCorte({
               width={Math.max(c.anchoMm * escalaX, 1)}
               height={Math.max(c.largoMm * escalaY, 1)}
               fill={COLOR_POR_ESTADO[c.estado] ?? "#d1d5db"}
-              stroke="#475569"
+              stroke="#0a4563"
               strokeWidth={0.5}
             >
               <title>
@@ -77,6 +91,24 @@ export function PlanoDeCorte({
             </rect>
           </g>
         ))}
+        {piezaPropuesta && piezaPropuesta.anchoMm > 0 && piezaPropuesta.largoMm > 0 && (
+          <rect
+            x={piezaPropuesta.xInicial * escalaX}
+            y={piezaPropuesta.yInicial * escalaY}
+            width={Math.max(piezaPropuesta.anchoMm * escalaX, 1)}
+            height={Math.max(piezaPropuesta.largoMm * escalaY, 1)}
+            fill="#1a8fca"
+            fillOpacity={0.35}
+            stroke="#1171a1"
+            strokeWidth={1.5}
+            strokeDasharray="5 3"
+          >
+            <title>
+              Pieza nueva propuesta · {piezaPropuesta.anchoMm}x{piezaPropuesta.largoMm}mm · (
+              {piezaPropuesta.xInicial}, {piezaPropuesta.yInicial})
+            </title>
+          </rect>
+        )}
         {/* borde del rollo completo */}
         <rect
           x={0}
@@ -84,23 +116,27 @@ export function PlanoDeCorte({
           width={anchoRollo * escalaX}
           height={largoRollo * escalaY}
           fill="none"
-          stroke="#0f172a"
+          stroke="#08344a"
           strokeWidth={1.5}
         />
       </svg>
-      <div className="mt-2 flex gap-4 text-xs text-neutral-600">
+      <div className="mt-2 flex flex-wrap gap-4 text-xs text-neutral-600">
         <Legend color={COLOR_POR_ESTADO.VENDIDO} label="Vendido" />
         <Legend color={COLOR_POR_ESTADO.RETAL_UTIL} label="Retal útil" />
         <Legend color={COLOR_POR_ESTADO.ELIMINADO} label="Eliminado" />
+        {piezaPropuesta && <Legend color="#1a8fca" dashed label="Pieza nueva propuesta" />}
       </div>
     </div>
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className="inline-block h-3 w-3 rounded-sm border border-neutral-400" style={{ background: color }} />
+      <span
+        className={`inline-block h-3 w-3 rounded-sm border ${dashed ? "border-dashed border-brand-700" : "border-neutral-400"}`}
+        style={{ background: color, opacity: dashed ? 0.5 : 1 }}
+      />
       {label}
     </span>
   );

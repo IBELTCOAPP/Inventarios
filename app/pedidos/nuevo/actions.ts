@@ -3,11 +3,33 @@
 import { db } from "@/lib/db";
 import { rollos, retales, cortes } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { getRollosActivosPorReferencia, getRetalesPorReferencia, getCortesPorLote } from "@/lib/db/queries";
+import {
+  getRollosActivosPorReferencia,
+  getRetalesPorReferencia,
+  getCortesPorLote,
+  getRolloPorLote,
+} from "@/lib/db/queries";
 import { listarCandidatos, type CandidatoCorte, type PiezaRequerida } from "@/lib/cutting-engine";
 
+/** Datos para dibujar el plano de corte de un rollo — ver components/plano-de-corte.tsx. */
+export type PlanoRollo = {
+  anchoMm: number;
+  largoMm: number;
+  largoUsadoMm: number;
+  cortes: {
+    id: number;
+    xInicial: number;
+    yInicial: number;
+    anchoMm: number;
+    largoMm: number;
+    estado: string;
+    pedidoTaller: string | null;
+    cliente: string | null;
+  }[];
+};
+
 export type ResultadoBusqueda =
-  | { ok: true; candidatos: CandidatoCorte[]; pieza: PiezaRequerida }
+  | { ok: true; candidatos: CandidatoCorte[]; pieza: PiezaRequerida; planos: Record<string, PlanoRollo> }
   | { ok: false; error: string };
 
 /** Busca TODAS las opciones disponibles (retales y rollos) para una pieza — no solo la mejor. */
@@ -30,23 +52,55 @@ export async function buscarDisponibilidad(input: {
     getRetalesPorReferencia(linea, referencia),
   ]);
 
+  // Plano de corte de cada rollo involucrado — tanto los rollos activos
+  // (candidatos directos) como el rollo de origen de cada retal candidato,
+  // para poder mostrar gráficamente "el rollo con los cortes que ya tiene"
+  // sin importar si el usuario terminó parado sobre un rollo o un retal.
+  const planos: Record<string, PlanoRollo> = {};
   const cortesPorRollo = new Map<
     string,
     { xInicial: number; yInicial: number; anchoMm: number; largoMm: number }[]
   >();
-  for (const r of rollosActivos) {
-    const cs = await getCortesPorLote(r.lote);
+
+  async function cargarPlano(lote: string, rollo: { anchoMm: number; largoMm: number; largoUsadoMm: number }) {
+    if (planos[lote]) return;
+    const cs = await getCortesPorLote(lote);
+    planos[lote] = {
+      anchoMm: rollo.anchoMm,
+      largoMm: rollo.largoMm,
+      largoUsadoMm: rollo.largoUsadoMm,
+      cortes: cs.map((c) => ({
+        id: c.id,
+        xInicial: c.xInicial,
+        yInicial: c.yInicial,
+        anchoMm: c.anchoMm,
+        largoMm: c.largoMm,
+        estado: c.estado,
+        pedidoTaller: c.pedidoTaller,
+        cliente: c.cliente,
+      })),
+    };
     cortesPorRollo.set(
-      r.lote,
+      lote,
       cs.map((c) => ({ xInicial: c.xInicial, yInicial: c.yInicial, anchoMm: c.anchoMm, largoMm: c.largoMm }))
     );
+  }
+
+  for (const r of rollosActivos) {
+    await cargarPlano(r.lote, r);
+  }
+  const lotesOrigenRetal = [...new Set(retalesDisponibles.map((r) => r.loteOrigen))];
+  for (const lote of lotesOrigenRetal) {
+    if (planos[lote]) continue;
+    const rolloOrigen = await getRolloPorLote(lote);
+    if (rolloOrigen) await cargarPlano(lote, rolloOrigen);
   }
 
   const candidatos = listarCandidatos(pieza, retalesDisponibles, rollosActivos, cortesPorRollo);
   if (candidatos.length === 0) {
     return { ok: false, error: "No hay rollo ni retal disponible con ancho/largo suficiente para esta pieza." };
   }
-  return { ok: true, candidatos, pieza };
+  return { ok: true, candidatos, pieza, planos };
 }
 
 export type EstadoHistorico = "VENDIDO" | "RETAL_UTIL" | "ELIMINADO";

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
+import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,22 +20,6 @@ export const metadata: Metadata = {
   description: "Inventario, retales y plano de corte de Importadora de correas colombiana SAS",
 };
 
-const NAV = [
-  { href: "/", label: "Inicio" },
-  { href: "/rollos", label: "Rollos" },
-  { href: "/retales", label: "Retales" },
-  { href: "/pedidos/nuevo", label: "Nuevo pedido" },
-  { href: "/historial", label: "Historial" },
-  { href: "/anchos", label: "Análisis de anchos" },
-];
-
-const NAV_MAESTROS = [
-  { href: "/clientes", label: "Clientes" },
-  { href: "/proveedores", label: "Proveedores" },
-  { href: "/lineas", label: "Tipos de línea" },
-  { href: "/operarios", label: "Operarios" },
-];
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -42,7 +27,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-neutral-50 text-neutral-900">
-        <header className="border-b border-neutral-200 bg-white">
+        <header className="border-b border-brand-100 bg-white shadow-sm shadow-neutral-900/[0.03]">
+          <div className="h-1 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-300" />
           <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
             <Link href="/" className="flex items-center">
               <Image
@@ -54,26 +40,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 priority
               />
             </Link>
-            <nav className="flex flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-1 text-sm text-neutral-600">
-              <div className="flex flex-wrap gap-4">
-                {NAV.map((item) => (
-                  <Link key={item.href} href={item.href} className="hover:text-neutral-950">
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-4 text-neutral-500">
-                <span className="text-xs uppercase tracking-wide text-neutral-400">Maestros:</span>
-                {NAV_MAESTROS.map((item) => (
-                  <Link key={item.href} href={item.href} className="hover:text-neutral-950">
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </nav>
+            <SiteNav />
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+        <footer className="border-t border-neutral-200 bg-white py-4 text-center text-xs text-neutral-400">
+          IBELTCO S.A.S — Inventario de rollos
+        </footer>
       </body>
     </html>
   );

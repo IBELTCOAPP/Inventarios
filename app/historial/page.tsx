@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getHistorialCortes } from "@/lib/db/queries";
 
 const ESTADO_STYLE: Record<string, string> = {
-  VENDIDO: "bg-blue-100 text-blue-800",
+  VENDIDO: "bg-brand-100 text-brand-800",
   RETAL_UTIL: "bg-amber-100 text-amber-800",
   ELIMINADO: "bg-neutral-200 text-neutral-600",
 };
@@ -21,7 +21,7 @@ export default async function HistorialPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto card">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-500">
             <tr>
@@ -36,12 +36,12 @@ export default async function HistorialPage() {
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {data.map((c) => (
-              <tr key={c.id} className="hover:bg-neutral-50">
+              <tr key={c.id} className="hover:bg-brand-50/60">
                 <td className="px-4 py-2">
                   {c.fecha ? new Date(c.fecha).toLocaleDateString("es-CO") : "—"}
                 </td>
                 <td className="px-4 py-2">
-                  <Link href={`/rollos/${encodeURIComponent(c.lote)}`} className="underline">
+                  <Link href={`/rollos/${encodeURIComponent(c.lote)}`} className="link-brand">
                     {c.lote}
                   </Link>
                 </td>

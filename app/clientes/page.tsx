@@ -14,8 +14,8 @@ export default async function ClientesPage() {
         <p className="text-sm text-neutral-600">
           Cada cliente tiene una <strong>letra de referencia</strong> que se antepone al número de
           pedido (ej. IBELTCO = letra <strong>C</strong> → pedido <strong>C-1234</strong>). Los
-          clientes de prueba precargados son datos de ensayo — edítalos o retíralos cuando tengas
-          los clientes reales.
+          clientes de prueba del ensayo inicial quedaron marcados Inactivo; los reales se cargaron
+          desde el histórico de cortes y los pedidos de taller de muestra.
         </p>
       </div>
       <MaestroCrud

@@ -31,7 +31,7 @@ export default async function RolloDetallePage({
         <Stat label="Disponible" value={`${disponible.toLocaleString("es-CO")} mm`} />
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="card p-4">
         <h2 className="mb-3 font-medium">Plano de corte</h2>
         <PlanoDeCorte
           anchoRollo={rollo.anchoMm}
@@ -50,7 +50,7 @@ export default async function RolloDetallePage({
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto card">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-500">
             <tr>
@@ -97,8 +97,8 @@ export default async function RolloDetallePage({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4">
-      <div className="text-lg font-semibold">{value}</div>
+    <div className="card p-4">
+      <div className="text-lg font-semibold text-brand-900">{value}</div>
       <div className="text-xs text-neutral-500">{label}</div>
     </div>
   );
