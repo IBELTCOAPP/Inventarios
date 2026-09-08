@@ -162,6 +162,8 @@ export async function confirmarCorte(input: {
       origenTipo: "retal",
       origenRetalId: retal.id,
       nota: nota?.trim() || null,
+      linea: retal.linea,
+      referencia: retal.referencia,
     });
 
     await db.update(retales).set({ disponible: false }).where(eq(retales.id, retal.id));
@@ -216,6 +218,8 @@ export async function confirmarCorte(input: {
     yInicial,
     origenTipo: "rollo",
     nota: nota?.trim() || null,
+    linea: rollo.linea,
+    referencia: rollo.referencia,
   });
 
   const nuevaFrontera = yInicial + largoMm;

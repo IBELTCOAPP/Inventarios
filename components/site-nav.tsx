@@ -10,6 +10,7 @@ const NAV = [
   { href: "/pedidos/nuevo", label: "Nuevo pedido" },
   { href: "/historial", label: "Historial" },
   { href: "/anchos", label: "Análisis de anchos" },
+  { href: "/planeacion", label: "Planeación" },
 ];
 
 const NAV_MAESTROS = [

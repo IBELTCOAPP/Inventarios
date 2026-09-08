@@ -71,6 +71,14 @@ export const cortes = pgTable("cortes", {
   origenTipo: text("origen_tipo").notNull().default("rollo"),
   origenRetalId: integer("origen_retal_id"),
   nota: text("nota"),
+  // Denormalizadas igual que cliente/operario — de dónde salió el corte
+  // (rollo o retal) siempre sabe su línea/referencia, y guardarlas aquí
+  // evita tener que hacer join con rollos/retales para poder agrupar la
+  // demanda histórica por referencia (ver lib/inventory-policy.ts). En
+  // filas históricas cargadas antes de este campo, quedan null hasta el
+  // backfill (scripts/backfill-linea-referencia.ts).
+  linea: text("linea"),
+  referencia: text("referencia"),
 });
 
 /**
@@ -131,4 +139,30 @@ export const proveedores = pgTable("proveedores", {
   contacto: text("contacto"),
   telefono: text("telefono"),
   estado: text("estado").notNull().default("Activo"),
+});
+
+/**
+ * POLITICAS_INVENTARIO — un renglón de política de reabastecimiento por
+ * línea+referencia (política (s, S): pedir cuando el stock cae por debajo
+ * del punto de reorden `s`, hasta un nivel objetivo `S`). Ver
+ * lib/inventory-policy.ts para las fórmulas; esta tabla solo guarda los
+ * insumos que Diego/Diana deben calibrar a mano porque no hay datos de
+ * proveedor (tiempo de reposición) ni de costos en el sistema todavía.
+ *
+ * Un renglón por (linea, referencia) — sin FK porque, igual que en
+ * `rollos`/`retales`, "referencia" es texto libre y no un maestro propio.
+ */
+export const politicasInventario = pgTable("politicas_inventario", {
+  id: serial("id").primaryKey(),
+  linea: text("linea").notNull(),
+  referencia: text("referencia").notNull(),
+  // Tiempo de reposición del proveedor, en días — insumo del punto de reorden.
+  leadTimeDias: integer("lead_time_dias").notNull().default(30),
+  // Cuántos días de demanda adicionales, más allá del lead time, se quiere
+  // cubrir al pedir (define el nivel objetivo S).
+  diasCoberturaObjetivo: integer("dias_cobertura_objetivo").notNull().default(30),
+  // Colchón manual en m² por si Diego quiere un margen extra sobre el
+  // calculado a partir del lead time (variabilidad de demanda/proveedor).
+  stockSeguridadM2: doublePrecision("stock_seguridad_m2").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

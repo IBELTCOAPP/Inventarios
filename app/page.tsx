@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { rollos, retales, cortes, clientes } from "@/lib/db/schema";
 import { eq, sql, gte, desc } from "drizzle-orm";
 import { getAnchosAnalisis } from "@/lib/db/queries";
+import { getFilasPlaneacion } from "@/lib/planeacion";
 
 async function getResumen() {
   const [
@@ -65,8 +66,9 @@ const ESTADO_ROLLO_COLOR: Record<string, string> = {
 };
 
 export default async function Home() {
-  const r = await getResumen();
+  const [r, filasPlaneacion] = await Promise.all([getResumen(), getFilasPlaneacion()]);
   const maxAncho = Math.max(...r.topAnchos.map((a) => a.unidadesVendidas), 1);
+  const nReordenar = filasPlaneacion.filter((f) => f.estado === "REORDENAR").length;
 
   return (
     <div className="space-y-8">
@@ -79,6 +81,16 @@ export default async function Home() {
           Registra un pedido y el aplicativo indica exactamente de dónde cortar.
         </p>
       </div>
+
+      {nReordenar > 0 && (
+        <Link
+          href="/planeacion"
+          className="block rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 transition hover:border-red-300"
+        >
+          ⚠️ <strong>{nReordenar}</strong> referencia{nReordenar === 1 ? "" : "s"} por debajo del punto de
+          reorden — revisa la <span className="underline">planeación de inventario →</span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <Card label="Rollos activos" value={r.rollosActivos} href="/rollos" />
