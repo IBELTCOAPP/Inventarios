@@ -3,8 +3,10 @@ export const dynamic = "force-dynamic";
 import { getClientes } from "@/lib/db/queries";
 import { guardarCliente, eliminarCliente } from "@/lib/db/maestros-actions";
 import { MaestroCrud } from "@/components/maestro-crud";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function ClientesPage() {
+  await requireUsuario("clientes");
   const data = await getClientes();
 
   return (

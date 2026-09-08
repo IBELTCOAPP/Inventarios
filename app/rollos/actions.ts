@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { rollos } from "@/lib/db/schema";
 import { eq, ne, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireSesion } from "@/lib/auth";
 
 type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -18,6 +19,7 @@ export async function guardarRollo(input: {
   proveedor?: string;
   estado: string;
 }): Promise<Resultado> {
+  await requireSesion();
   const lote = input.lote.trim();
   if (!lote || !input.linea || !input.referencia) {
     return { ok: false, error: "Lote, línea y referencia son obligatorios." };
@@ -58,6 +60,7 @@ export async function guardarRollo(input: {
 }
 
 export async function eliminarRollo(id: number): Promise<Resultado> {
+  await requireSesion();
   await db.delete(rollos).where(eq(rollos.id, id));
   revalidatePath("/rollos");
   revalidatePath("/pedidos/nuevo");

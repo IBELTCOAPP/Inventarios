@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { getRetalesTodos, getLineasMaestroActivas } from "@/lib/db/queries";
 import { RetalForm } from "@/components/retal-form";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function RetalesPage() {
+  await requireUsuario("retales");
   const [data, lineasData] = await Promise.all([getRetalesTodos(), getLineasMaestroActivas()]);
 
   return (

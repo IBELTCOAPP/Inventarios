@@ -13,6 +13,7 @@ import { db } from "./index";
 import { operarios, lineas, clientes, proveedores } from "./schema";
 import { eq, ne, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireSesion } from "@/lib/auth";
 
 type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -25,6 +26,7 @@ export async function guardarOperario(input: {
   nombre: string;
   estado: string;
 }): Promise<Resultado> {
+  await requireSesion();
   const nombre = input.nombre.trim();
   if (!nombre) return { ok: false, error: "El nombre es obligatorio." };
 
@@ -38,6 +40,7 @@ export async function guardarOperario(input: {
 }
 
 export async function eliminarOperario(id: number): Promise<Resultado> {
+  await requireSesion();
   await db.delete(operarios).where(eq(operarios.id, id));
   revalidatePath("/operarios");
   return { ok: true };
@@ -52,6 +55,7 @@ export async function guardarLinea(input: {
   nombre: string;
   estado: string;
 }): Promise<Resultado> {
+  await requireSesion();
   const nombre = input.nombre.trim();
   if (!nombre) return { ok: false, error: "El nombre de la línea es obligatorio." };
 
@@ -72,6 +76,7 @@ export async function guardarLinea(input: {
 }
 
 export async function eliminarLinea(id: number): Promise<Resultado> {
+  await requireSesion();
   await db.delete(lineas).where(eq(lineas.id, id));
   revalidatePath("/lineas");
   return { ok: true };
@@ -90,6 +95,7 @@ export async function guardarCliente(input: {
   telefono?: string;
   estado: string;
 }): Promise<Resultado> {
+  await requireSesion();
   const nombre = input.nombre.trim();
   const letra = input.letra.trim().toUpperCase();
   if (!nombre) return { ok: false, error: "El nombre del cliente es obligatorio." };
@@ -124,6 +130,7 @@ export async function guardarCliente(input: {
 }
 
 export async function eliminarCliente(id: number): Promise<Resultado> {
+  await requireSesion();
   await db.delete(clientes).where(eq(clientes.id, id));
   revalidatePath("/clientes");
   revalidatePath("/pedidos/nuevo");
@@ -141,6 +148,7 @@ export async function guardarProveedor(input: {
   telefono?: string;
   estado: string;
 }): Promise<Resultado> {
+  await requireSesion();
   const nombre = input.nombre.trim();
   if (!nombre) return { ok: false, error: "El nombre del proveedor es obligatorio." };
 
@@ -161,6 +169,7 @@ export async function guardarProveedor(input: {
 }
 
 export async function eliminarProveedor(id: number): Promise<Resultado> {
+  await requireSesion();
   await db.delete(proveedores).where(eq(proveedores.id, id));
   revalidatePath("/proveedores");
   return { ok: true };

@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { getFilasPlaneacion, VENTANA_DIAS_DEMANDA } from "@/lib/planeacion";
 import { PlaneacionTable } from "@/components/planeacion-table";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function PlaneacionPage() {
+  await requireUsuario("planeacion");
   const filas = await getFilasPlaneacion();
   const nReordenar = filas.filter((f) => f.estado === "REORDENAR").length;
   const nOk = filas.filter((f) => f.estado === "OK").length;

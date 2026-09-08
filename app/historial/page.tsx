@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { getHistorialCortes } from "@/lib/db/queries";
+import { requireUsuario } from "@/lib/auth";
 
 const ESTADO_STYLE: Record<string, string> = {
   VENDIDO: "bg-brand-100 text-brand-800",
@@ -10,6 +11,7 @@ const ESTADO_STYLE: Record<string, string> = {
 };
 
 export default async function HistorialPage() {
+  await requireUsuario("historial");
   const data = await getHistorialCortes(200);
 
   return (

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { retales } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireSesion } from "@/lib/auth";
 
 type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -16,6 +17,7 @@ export async function guardarRetal(input: {
   largoMm: number;
   disponible: boolean;
 }): Promise<Resultado> {
+  await requireSesion();
   if (!input.linea || !input.referencia) {
     return { ok: false, error: "Línea y referencia son obligatorias." };
   }
@@ -43,6 +45,7 @@ export async function guardarRetal(input: {
 }
 
 export async function eliminarRetal(id: number): Promise<Resultado> {
+  await requireSesion();
   await db.delete(retales).where(eq(retales.id, id));
   revalidatePath("/retales");
   revalidatePath("/pedidos/nuevo");

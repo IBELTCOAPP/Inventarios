@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { getRollos, getLineasMaestroActivas, getProveedoresActivos } from "@/lib/db/queries";
 import { RolloForm } from "@/components/rollo-form";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function RollosPage() {
+  await requireUsuario("rollos");
   const [data, lineasData, proveedoresData] = await Promise.all([
     getRollos(),
     getLineasMaestroActivas(),

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { politicasInventario } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireSesion } from "@/lib/auth";
 
 export type ResultadoGuardar = { ok: true } | { ok: false; error: string };
 
@@ -20,6 +21,7 @@ export async function guardarPolitica(input: {
   diasCoberturaObjetivo: number;
   stockSeguridadM2: number;
 }): Promise<ResultadoGuardar> {
+  await requireSesion();
   const { linea, referencia } = input;
   if (!linea || !referencia) return { ok: false, error: "Falta línea o referencia." };
   if (!(input.leadTimeDias >= 0) || !(input.diasCoberturaObjetivo >= 0) || !(input.stockSeguridadM2 >= 0)) {

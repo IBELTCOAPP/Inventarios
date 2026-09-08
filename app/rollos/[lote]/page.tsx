@@ -3,10 +3,12 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { getRolloPorLote, getCortesPorLote } from "@/lib/db/queries";
 import { PlanoDeCorte } from "@/components/plano-de-corte";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function RolloDetallePage({
   params,
 }: PageProps<"/rollos/[lote]">) {
+  await requireUsuario("rollos");
   const { lote: loteParam } = await params;
   const lote = decodeURIComponent(loteParam);
   const rollo = await getRolloPorLote(lote);

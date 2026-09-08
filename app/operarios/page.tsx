@@ -3,8 +3,10 @@ export const dynamic = "force-dynamic";
 import { getOperarios } from "@/lib/db/queries";
 import { guardarOperario, eliminarOperario } from "@/lib/db/maestros-actions";
 import { MaestroCrud } from "@/components/maestro-crud";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function OperariosPage() {
+  await requireUsuario("operarios");
   const data = await getOperarios();
 
   return (

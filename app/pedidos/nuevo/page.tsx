@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { getLineasReferencias, getClientesActivos, getOperariosActivos } from "@/lib/db/queries";
 import { NuevoPedidoForm } from "@/components/nuevo-pedido-form";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function NuevoPedidoPage() {
+  await requireUsuario("pedidos");
   const [opciones, clientesData, operariosData] = await Promise.all([
     getLineasReferencias(),
     getClientesActivos(),

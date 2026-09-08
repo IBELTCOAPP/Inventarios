@@ -3,8 +3,10 @@ export const dynamic = "force-dynamic";
 import { getLineasMaestro } from "@/lib/db/queries";
 import { guardarLinea, eliminarLinea } from "@/lib/db/maestros-actions";
 import { MaestroCrud } from "@/components/maestro-crud";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function LineasPage() {
+  await requireUsuario("lineas");
   const data = await getLineasMaestro();
 
   return (

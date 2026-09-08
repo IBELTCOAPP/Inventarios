@@ -142,6 +142,40 @@ export const proveedores = pgTable("proveedores", {
 });
 
 /**
+ * USUARIOS — control de acceso a la aplicación. Cada usuario tiene un rol
+ * (Administrador | Almacen | Operario) que define un set de páginas por
+ * defecto (ver PAGINAS_POR_ROL en lib/auth.ts), pero el administrador puede
+ * ajustar exactamente qué páginas ve cada quien en `paginasPermitidas` —
+ * un array de claves de página (ver lib/pages.ts), independiente del rol.
+ * Un usuario con rol Administrador ve todo siempre, sin importar lo que
+ * tenga guardado en `paginasPermitidas` (ver lib/auth.ts).
+ */
+export const usuarios = pgTable("usuarios", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  rol: text("rol").notNull().default("Operario"), // Administrador | Almacen | Operario
+  paginasPermitidas: text("paginas_permitidas").array().notNull().default([]),
+  estado: text("estado").notNull().default("Activo"), // Activo | Inactivo
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * SESIONES — sesiones de login activas, token opaco (no JWT) guardado en
+ * una cookie httpOnly y buscado aquí en cada request. Se prefiere sobre un
+ * JWT autocontenido porque así desactivar un usuario (o cerrarle sesión a
+ * la fuerza) tiene efecto inmediato, sin esperar a que expire un token que
+ * ya se emitió.
+ */
+export const sesiones = pgTable("sesiones", {
+  token: text("token").primaryKey(),
+  usuarioId: integer("usuario_id").notNull(),
+  expiraEn: timestamp("expira_en", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
  * POLITICAS_INVENTARIO — un renglón de política de reabastecimiento por
  * línea+referencia (política (s, S): pedir cuando el stock cae por debajo
  * del punto de reorden `s`, hasta un nivel objetivo `S`). Ver

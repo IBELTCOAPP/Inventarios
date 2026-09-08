@@ -10,6 +10,7 @@ import {
   getRolloPorLote,
 } from "@/lib/db/queries";
 import { listarCandidatos, type CandidatoCorte, type PiezaRequerida } from "@/lib/cutting-engine";
+import { requireSesion } from "@/lib/auth";
 
 /** Datos para dibujar el plano de corte de un rollo — ver components/plano-de-corte.tsx. */
 export type PlanoRollo = {
@@ -39,6 +40,7 @@ export async function buscarDisponibilidad(input: {
   anchoMm: number;
   largoMm: number;
 }): Promise<ResultadoBusqueda> {
+  await requireSesion();
   const { linea, referencia, anchoMm, largoMm } = input;
   if (!linea || !referencia) return { ok: false, error: "Selecciona línea y referencia." };
   if (!(anchoMm > 0) || !(largoMm > 0)) {
@@ -127,6 +129,7 @@ export async function confirmarCorte(input: {
   estado: EstadoHistorico;
   nota?: string;
 }): Promise<{ ok: true; lote: string; pedidoCodigo: string } | { ok: false; error: string }> {
+  await requireSesion();
   const { candidato, anchoMm, largoMm, xInicial, yInicial, operario, estado, nota } = input;
 
   if (!/^\d+$/.test(input.numeroPedido.trim())) {

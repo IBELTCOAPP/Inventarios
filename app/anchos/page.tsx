@@ -1,8 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { getAnchosAnalisis } from "@/lib/db/queries";
+import { requireUsuario } from "@/lib/auth";
 
 export default async function AnchosPage() {
+  await requireUsuario("anchos");
   const data = await getAnchosAnalisis();
   const top15 = data.slice(0, 15);
   const maxUnidades = Math.max(...top15.map((a) => a.unidadesVendidas), 1);
