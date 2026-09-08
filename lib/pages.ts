@@ -11,17 +11,17 @@
  */
 
 export const PAGINAS = [
-  { key: "rollos", label: "Rollos", href: "/rollos", grupo: "principal" },
-  { key: "retales", label: "Retales", href: "/retales", grupo: "principal" },
-  { key: "pedidos", label: "Nuevo pedido", href: "/pedidos/nuevo", grupo: "principal" },
-  { key: "historial", label: "Historial", href: "/historial", grupo: "principal" },
-  { key: "anchos", label: "Análisis de anchos", href: "/anchos", grupo: "principal" },
-  { key: "planeacion", label: "Planeación", href: "/planeacion", grupo: "principal" },
-  { key: "clientes", label: "Clientes", href: "/clientes", grupo: "maestros" },
-  { key: "proveedores", label: "Proveedores", href: "/proveedores", grupo: "maestros" },
-  { key: "lineas", label: "Tipos de línea", href: "/lineas", grupo: "maestros" },
-  { key: "operarios", label: "Operarios", href: "/operarios", grupo: "maestros" },
-  { key: "usuarios", label: "Usuarios", href: "/usuarios", grupo: "administracion" },
+  { key: "rollos", label: "Rollos", href: "/rollos", grupo: "principal", icon: "🎞️" },
+  { key: "retales", label: "Retales", href: "/retales", grupo: "principal", icon: "✂️" },
+  { key: "pedidos", label: "Nuevo pedido", href: "/pedidos/nuevo", grupo: "principal", icon: "📝" },
+  { key: "historial", label: "Historial", href: "/historial", grupo: "principal", icon: "🕘" },
+  { key: "anchos", label: "Análisis de anchos", href: "/anchos", grupo: "principal", icon: "📊" },
+  { key: "planeacion", label: "Planeación", href: "/planeacion", grupo: "principal", icon: "📦" },
+  { key: "clientes", label: "Clientes", href: "/clientes", grupo: "maestros", icon: "🏢" },
+  { key: "proveedores", label: "Proveedores", href: "/proveedores", grupo: "maestros", icon: "🚚" },
+  { key: "lineas", label: "Tipos de línea", href: "/lineas", grupo: "maestros", icon: "🏷️" },
+  { key: "operarios", label: "Operarios", href: "/operarios", grupo: "maestros", icon: "👷" },
+  { key: "usuarios", label: "Usuarios", href: "/usuarios", grupo: "administracion", icon: "👤" },
 ] as const;
 
 export type PaginaKey = (typeof PAGINAS)[number]["key"];
@@ -52,7 +52,7 @@ export const PAGINAS_POR_ROL: Record<Rol, PaginaKey[]> = {
 /**
  * Lógica pura de "¿este usuario puede ver esta página?" — sin acceso a
  * base de datos ni cookies, para poder usarse igual desde el servidor
- * (lib/auth.ts) y desde un componente cliente (components/site-nav.tsx)
+ * (lib/auth.ts) y desde un componente cliente (components/sidebar.tsx)
  * sin duplicar la regla. Administrador ve todo siempre.
  */
 export function puedeVerPaginaClave(rol: string, paginasPermitidas: string[], pagina: PaginaKey): boolean {
